@@ -26,4 +26,9 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 // D7        | PORTD |  24         |  DATA BUS LINE (DB7)                     |
 //-----------+-------+-------------+------------------------------------------+
 ```
+## Display information
+Here are links to our active displays:\
+[CFAF320480C7-035TR](https://www.crystalfontz.com/product/cfaf320480c7035tr-320x480-resistive-touchscreen-tft-display)\
+[CFAF320480C7-035TN](https://www.crystalfontz.com/product/cfaf320480c7035tn-320x480-3-5-inch-color-tft-display)
+
 For more information about other TFT offerings, please see our full list [here](https://www.crystalfontz.com/c/tft-lcd-displays/25).
