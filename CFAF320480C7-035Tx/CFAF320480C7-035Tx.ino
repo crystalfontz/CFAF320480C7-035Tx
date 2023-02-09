@@ -41,7 +41,7 @@
 // 3.3V/5V   |       |             |  POWER 3.3V                              |
 // GND       |       |             |  GROUND                                  |
 //-----------+-------+-------------+------------------------------------------+
-// D8        | PORTB |  38         |  Chip Enable Signal              (CS)    |
+// D8        | PORTB |  38         |  Chip enable signal              (CS)    |
 // D9        | PORTB |  09         |  Reset                           (Reset) |
 // D10       | PORTB |  37         |  Data/Command                    (DC)    |
 // D11       | PORTB |  36         |  Write                           (WR)    |
@@ -59,6 +59,18 @@
 // D7        | PORTD |  24         |  DATA BUS LINE (DB7)                     |
 //-----------+-------+-------------+------------------------------------------+
 //==============================================================================
+// LCD SPI pins and control lines on Seeeduino:
+//  ARD      | Port  | Display pin |  Function - SPI                          |
+//-----------+-------+-------------+------------------------------------------+
+// 3.3V/5V   |       |             |  POWER 3.3V                              |
+// GND       |       |             |  GROUND                                  |
+//-----------+-------+-------------+------------------------------------------+
+// D8        | PORTB |  37         |  Data/Command                    (DC)    |
+// D9        | PORTB |  09         |  Reset                           (Reset) |
+// D10       | PORTB |  38         |  Chip select                     (CS)    |
+// D11       | PORTB |  34         |  SPI data input                  (SDA)   |
+// D13       | PORTB |  36         |  Serial clock                    (SCK)   |
+//-----------+-------+-------------+------------------------------------------+
 // Interface Selection
 // IM2 | IM1 | IM0 |  Interface mode  |
 //-----+-----+-----+------------------+
@@ -68,20 +80,26 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-//#include <SD.h>
+#include <SPI.h>
+#include <SD.h>
 
 // set the resolution to match the display being used
 #define HRES 480
 #define VRES 320
 
-// define the Arduino pin locations as per the table above
+// set the interface to be used
+#define interface_SPI 1
+#define interface_PARALLEL 0
+
+#if interface_PARALLEL
+
+// define the Arduino pin locations as per the parallel 8080 table above
 #define CS (8)
 #define RESET (9)
 #define DC (10)
 #define WR (11)
 #define RD (12)
 #define datapins (PORTD)
-
 // define clear and set commands for each of the pins
 #define CLR_CS (PORTB &= ~(0x01))
 #define SET_CS (PORTB |= (0x01))
@@ -93,6 +111,30 @@
 #define SET_WR (PORTC |= (0x02))
 #define CLR_RD (PORTC &= ~(0x04))
 #define SET_RD (PORTC |= (0x04))
+
+#endif
+
+#if interface_SPI
+
+// define the Arduino pin locations as per the SPI table above
+#define DC (8)
+#define RESET (9)
+#define CS (10)
+#define MOSI (11)
+#define SCK (13)
+// define clear and set commands for each of the pins
+#define CLR_DC (PORTB &= ~(0x01))
+#define SET_DC (PORTB |= (0x01))
+#define CLR_RESET (PORTB &= ~(0x02))
+#define SET_RESET (PORTB |= (0x02))
+#define CLR_CS (PORTB &= ~(0x04))
+#define SET_CS (PORTB |= (0x04))
+#define CLR_MOSI (PORTB &= ~(0x08))
+#define SET_MOSI (PORTB |= (0x08))
+#define CLR_SCK (PORTB &= ~(0x20))
+#define SET_SCK (PORTB |= (0x20))
+
+#endif
 
 // ILI9488 defines
 #define ILI9488_PGAMCTRL (0xE0)
@@ -113,10 +155,11 @@
 #define ILI9488_DISPON (0x29)
 #define ILI9488_RAMWR (0x2C)
 
+#if interface_PARALLEL
 // send a command via the parallel interface
 void write_command(uint8_t command)
 {
-	// select the LCD's command register
+	// select the LCD command register
 	CLR_DC;
 	// select the LCD controller
 	CLR_CS;
@@ -126,14 +169,14 @@ void write_command(uint8_t command)
 	CLR_WR;
 	// set the write register
 	SET_WR;
-	// deselct the LCD controller
+	// deselect the LCD controller
 	SET_CS;
 }
 
 // send data via the parallel interface
 void write_data(uint8_t data)
 {
-	// select the LCD's data register
+	// select the LCD data register
 	SET_DC;
 	// select the LCD controller
 	CLR_CS;
@@ -143,21 +186,52 @@ void write_data(uint8_t data)
 	CLR_WR;
 	// set the write register
 	SET_WR;
-	// deselct the LCD controller
+	// deselect the LCD controller
 	SET_CS;
 }
+#endif
+
+#if interface_SPI
+// send a command via the serial interface
+void write_command(uint8_t command)
+{
+	// select the LCD command register
+	CLR_DC;
+	// select the LCD controller
+	CLR_CS;
+	// transfer command via SPI
+	SPI.transfer(command);
+	// deselect the LCD controller
+	SET_CS;
+}
+
+// send data via the serial interface
+void write_data(uint8_t data)
+{
+	// select the LCD data register
+	SET_DC;
+	// select the LCD controller
+	CLR_CS;
+	// transfer data via SPI
+	SPI.transfer(data);
+	// deselect the LCD controller
+	SET_CS;
+}
+#endif
 
 // display initialization sequence
 void initialize_display()
 {
+	// issue a reset to the display to ensure it is properly initialized
 	SET_RESET;
-	_delay_ms(1);
+	delay(1);
 	CLR_RESET;
-	_delay_ms(10);
+	delay(10);
 	SET_RESET;
-	_delay_ms(120);
+	delay(120);
 
-	write_command(ILI9488_PGAMCTRL);
+	// positive gamma control
+	write_command(ILI9488_PGAMCTRL); 
 	write_data(0x00);
 	write_data(0x04);
 	write_data(0x0E);
@@ -174,6 +248,7 @@ void initialize_display()
 	write_data(0x1D);
 	write_data(0x0F);
 
+	// negative gamma control
 	write_command(ILI9488_NGAMCTRL);
 	write_data(0x00);
 	write_data(0x1B);
@@ -191,82 +266,172 @@ void initialize_display()
 	write_data(0x37);
 	write_data(0x0F);
 
+	// power control
 	write_command(ILI9488_PCTRL1);
 	write_data(0x18);
 	write_data(0x16);
-
 	write_command(ILI9488_PCTRL2);
 	write_data(0x41);
 
+	// VCOM control
 	write_command(ILI9488_VCOMCTRL);
 	write_data(0x00);
 	write_data(0x1E);
 	write_data(0x80);
 
+	// memory access control 
 	write_command(ILI9488_MADCTL);
 	write_data(0x48);
 
+	// interface pixel format
 	write_command(ILI9488_COLMOD);
-	write_data(0x55); // 16bits/pixel
-
+	write_data(0x06); // 18bits/pixel (MCU)
+	
+	// frame rate control
 	write_command(ILI9488_FRMCTR);
 	write_data(0xB0);
 
+	// display inversion control
 	write_command(ILI9488_INVTR);
 	write_data(0x02);
 
+	// set image function
 	write_command(ILI9488_SETIMG);
 	write_data(0x00);
-
+ 
+	// adjust control 3
 	write_command(ILI9488_ADJCTRL3);
 	write_data(0xA9);
 	write_data(0x51);
 	write_data(0x2C);
 	write_data(0x82);
 
+	// display function control
 	write_command(ILI9488_DISCTRL);
 	write_data(0x02);
 	write_data(0x02);
 	write_data(0x3B);
 
+	// column address set
 	write_command(ILI9488_CASET);
 	write_data(0x00);
 	write_data(0x00);
 	write_data(0x01);
 	write_data(0x3F);
 
+	// page address set
 	write_command(ILI9488_PAGESET);
 	write_data(0x00);
 	write_data(0x00);
 	write_data(0x01);
 	write_data(0xDF);
+	
+	// write the current column and page address to RAM
+	write_command(ILI9488_RAMWR);
 
+	// sleep out function 
 	write_command(ILI9488_SLPOUT);
 	delay(120); // it is required to wait 120ms before sending the next command
+	
+	//turn the display on
 	write_command(ILI9488_DISPON);
-	write_command(ILI9488_RAMWR);
 }
 
-// fill screen with a single color
-void show_single_color_on_display(unsigned int color)
+// set the position on the display to start transferring data to
+void setPosition(uint8_t x, uint8_t y)
 {
-	unsigned int i, j;
+	write_command(ILI9488_CASET); // column address set function
+	write_data(0x00);
+	write_data(0x00 + x); // the x axis will increment according to the variable passed through
+	write_data(0x01);
+	write_data(0x3F);
 
-	for (j = 0; j < 480; j++)
+	write_command(ILI9488_PAGESET); // page address set function
+	write_data(0x00);
+	write_data(0x00 + y); // the y axis will increment according to the variable passed through
+	write_data(0x01);
+	write_data(0xDF);
+
+	write_command(ILI9488_RAMWR); // write the current position to RAM
+}
+
+// fill LCD with 4 different colored bars
+void ColorBars()
+{
+	uint8_t number = 4;				  // 4 bars
+	uint8_t barHeight = 480 / number; // divide the colors into equal heights
+	int i;
+	int j;
+
+	setPosition(0, 0);
+	for (i = 0; i < barHeight; i++) // set the vertical limit as the height of one bar
 	{
-		for (i = 0; i < 320; i++)
+		for (j = 0; j < 320; j++)
 		{
-			write_data(color >> 8);
-			write_data(color & 0xff);
+			write_data(0xff); // choose the R-G-B code to transfer to the display
+			write_data(0xff);
+			write_data(0xff);
+		}
+	}
+
+	setPosition(0, barHeight); // update the position to start from the end of the first bar
+	for (i = 0; i < barHeight; i++)
+	{
+		for (j = 0; j < 320; j++)
+		{
+			write_data(0xDC);
+			write_data(0xD0);
+			write_data(0xFF);
+		}
+	}
+
+	setPosition(0, (barHeight * 2)); // update the position to start from the end of the second bar
+	for (i = 0; i < barHeight; i++)
+	{
+		for (j = 0; j < 320; j++)
+		{
+
+			write_data(0x00);
+			write_data(0xFF);
+			write_data(0xFF);
+		}
+	}
+
+	setPosition(0, (barHeight * 3)); // update the position to start from the end of the third bar
+	for (i = 0; i < barHeight; i++)
+	{
+		for (j = 0; j < 320; j++)
+		{
+			write_data(0x40);
+			write_data(0x19);
+			write_data(0x35);
+		}
+	}
+}
+
+// fill LCD with a single color
+void fill_LCD(uint8_t R, uint8_t G, uint8_t B)
+{
+	int i, j;
+	setPosition(0, 0); // set the start position to be 0,0
+	// traverse the entire display
+	for (i = 0; i < 480; i++)
+	{
+		for (j = 0; j < 320; j++)
+		{
+			write_data(R);
+			write_data(G);
+			write_data(B);
 		}
 	}
 }
 
 void setup()
 {
+#if interface_PARALLEL
 	// set up port directions
-	DDRD = 0xFF;
-	DDRB = 0x1F;
+	DDRD = 0xFF; // pins 0-7 set as outputs
+	DDRB = 0x1F; // pins 8-12 set as outputs
 
 	// configure the pins in a reasonable starting state
 	datapins = 0;
@@ -274,23 +439,47 @@ void setup()
 	SET_WR;
 	SET_CS;
 	CLR_DC;
-	delay(1);
+#endif
 
-	initialize_display();
+#if interface_SPI
+	// set up port directions
+	DDRB = 0x3F; // pins 8-13 set as outputs
+
+	// configure the pins in a reasonable starting state
+	SET_DC;
+	SET_CS;
+	CLR_MOSI;
+	CLR_SCK;
+
+	// begin SPI with the following settings
+	SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+	SPI.begin();
+#endif
+
+	initialize_display(); // call the display initialization function
 }
 
-// more demos will be added soon!
+// set the demo to 1 to try it out
 #define showcolor_demo 1
+#define colorbars_demo 0
+// more demos will be added soon!
 
 void loop()
 {
+#if colorbars_demo
+	ColorBars();
+	delay(5000);
+#endif
+
 #if showcolor_demo
-	show_single_color_on_display(0xF800);
+	// colors are sent in the R-G-B format
+	fill_LCD(0xDC, 0xD0, 0xFF);
 	delay(5000);
-	show_single_color_on_display(0x07E0);
+	fill_LCD(0x88, 0x08, 0x08);
 	delay(5000);
-	show_single_color_on_display(0x001F);
+	fill_LCD(0x40, 0x19, 0x35);
+	delay(5000);
+	fill_LCD(0x00, 0xFF, 0xFF);
 	delay(5000);
 #endif
 }
-

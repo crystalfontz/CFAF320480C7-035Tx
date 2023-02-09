@@ -3,18 +3,19 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 
 ## Connection Guide
 ```
+// LCD parallel 8080 pins and control lines on Seeeduino:
 //  ARD      | Port  | Display pin |  Function - 8080 Parallel                |
 //-----------+-------+-------------+------------------------------------------+
 // 3.3V/5V   |       |             |  POWER 3.3V                              |
 // GND       |       |             |  GROUND                                  |
 //-----------+-------+-------------+------------------------------------------+
-// D8        | PORTB |  38         |  Chip Enable Signal              (CS)    |
+// D8        | PORTB |  38         |  Chip enable signal              (CS)    |
 // D9        | PORTB |  09         |  Reset                           (Reset) |
 // D10       | PORTB |  37         |  Data/Command                    (DC)    |
 // D11       | PORTB |  36         |  Write                           (WR)    |
 // D12       | PORTB |  35         |  Read                            (RD)    |
 //-----------+-------+-------------+------------------------------------------+
-//Data Lines
+// Data Lines
 //-----------+-------+-------------+------------------------------------------+
 // D0        | PORTD |  31         |  DATA BUS LINE (DB0)                     |
 // D1        | PORTD |  30         |  DATA BUS LINE (DB1)                     |
@@ -25,6 +26,25 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 // D6        | PORTD |  25         |  DATA BUS LINE (DB6)                     |
 // D7        | PORTD |  24         |  DATA BUS LINE (DB7)                     |
 //-----------+-------+-------------+------------------------------------------+
+//==============================================================================
+// LCD SPI pins and control lines on Seeeduino:
+//  ARD      | Port  | Display pin |  Function - SPI                          |
+//-----------+-------+-------------+------------------------------------------+
+// 3.3V/5V   |       |             |  POWER 3.3V                              |
+// GND       |       |             |  GROUND                                  |
+//-----------+-------+-------------+------------------------------------------+
+// D8        | PORTB |  37         |  Data/Command                    (DC)    |
+// D9        | PORTB |  09         |  Reset                           (Reset) |
+// D10       | PORTB |  38         |  Chip select                     (CS)    |
+// D11       | PORTB |  34         |  SPI data input                  (SDA)   |
+// D13       | PORTB |  36         |  Serial clock                    (SCK)   |
+//-----------+-------+-------------+------------------------------------------+
+// Interface Selection
+// IM2 | IM1 | IM0 |  Interface mode  |
+//-----+-----+-----+------------------+
+// 0   | 1   | 1   |  8-bit parallel  |
+// 1   | 1   | 1   |  4-wire SPI      |
+//-----+-----+-----+------------------+
 ```
 ## Display information
 Here are links to our active displays:\
