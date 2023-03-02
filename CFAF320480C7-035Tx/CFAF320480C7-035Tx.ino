@@ -231,7 +231,7 @@ void initialize_display()
 	delay(120);
 
 	// positive gamma control
-	write_command(ILI9488_PGAMCTRL); 
+	write_command(ILI9488_PGAMCTRL);
 	write_data(0x00);
 	write_data(0x04);
 	write_data(0x0E);
@@ -279,14 +279,14 @@ void initialize_display()
 	write_data(0x1E);
 	write_data(0x80);
 
-	// memory access control 
+	// memory access control
 	write_command(ILI9488_MADCTL);
-	write_data(0x48);
+	write_data(0x40); // page address order 1
 
 	// interface pixel format
 	write_command(ILI9488_COLMOD);
 	write_data(0x06); // 18bits/pixel (MCU)
-	
+
 	// frame rate control
 	write_command(ILI9488_FRMCTR);
 	write_data(0xB0);
@@ -298,7 +298,7 @@ void initialize_display()
 	// set image function
 	write_command(ILI9488_SETIMG);
 	write_data(0x00);
- 
+
 	// adjust control 3
 	write_command(ILI9488_ADJCTRL3);
 	write_data(0xA9);
@@ -325,30 +325,30 @@ void initialize_display()
 	write_data(0x00);
 	write_data(0x01);
 	write_data(0xDF);
-	
+
 	// write the current column and page address to RAM
 	write_command(ILI9488_RAMWR);
 
-	// sleep out function 
+	// sleep out function
 	write_command(ILI9488_SLPOUT);
 	delay(120); // it is required to wait 120ms before sending the next command
-	
-	//turn the display on
+
+	// turn the display on
 	write_command(ILI9488_DISPON);
 }
 
 // set the position on the display to start transferring data to
-void setPosition(uint8_t x, uint8_t y)
+void setPosition(uint16_t x, uint16_t y)
 {
 	write_command(ILI9488_CASET); // column address set function
-	write_data(0x00);
-	write_data(0x00 + x); // the x axis will increment according to the variable passed through
+	write_data(x >> 8);
+	write_data(x & 0x00FF); // the x axis will increment according to the variable passed through
 	write_data(0x01);
 	write_data(0x3F);
 
 	write_command(ILI9488_PAGESET); // page address set function
-	write_data(0x00);
-	write_data(0x00 + y); // the y axis will increment according to the variable passed through
+	write_data(y >> 8);
+	write_data(y & 0x00FF); // the y axis will increment according to the variable passed through
 	write_data(0x01);
 	write_data(0xDF);
 
@@ -358,8 +358,8 @@ void setPosition(uint8_t x, uint8_t y)
 // fill LCD with 4 different colored bars
 void ColorBars()
 {
-	uint8_t number = 4;				  // 4 bars
-	uint8_t barHeight = 480 / number; // divide the colors into equal heights
+	uint16_t number = 4;			   // 4 bars
+	uint16_t barHeight = 480 / number; // divide the colors into equal heights
 	int i;
 	int j;
 
@@ -390,7 +390,6 @@ void ColorBars()
 	{
 		for (j = 0; j < 320; j++)
 		{
-
 			write_data(0x00);
 			write_data(0xFF);
 			write_data(0xFF);
@@ -426,6 +425,108 @@ void fill_LCD(uint8_t R, uint8_t G, uint8_t B)
 	}
 }
 
+void show_BMPs_in_root(void)
+{
+	// these are the colors pulled from the uSD card
+	uint8_t R;
+	uint8_t G;
+	uint8_t B;
+
+	File root_dir;
+	root_dir = SD.open("/");
+	if (0 == root_dir)
+	{
+		Serial.println("show_BMPs_in_root: Can't open \"root\"");
+		return;
+	}
+	File bmp_file;
+
+	while (1)
+	{
+		bmp_file = root_dir.openNextFile();
+		if (0 == bmp_file)
+		{
+			// no more files, break out of while()
+			// root_dir will be closed below.
+			break;
+		}
+		// skip directories (what about volume name?)
+		if (0 == bmp_file.isDirectory())
+		{
+			// the file name must include ".BMP"
+			if (0 != strstr(bmp_file.name(), ".BMP"))
+			{
+				Serial.println("size=");
+				Serial.print(bmp_file.size()); // print the size of the bmp
+
+				// the BMP must be exactly 460854 long 
+				if (460854 == bmp_file.size())
+				{
+					// jump over the BMP header, this value is a default
+					bmp_file.seek(54);
+
+					// since we are limited in memory, we can not send 
+					// 320 * 3 = 960 bytes as is. therefore, split this into four 
+					// chunks of 80 pixels each of 80 * 3 = 240 bytes
+					
+					// making this static speeds it up slightly (10ms)
+					static uint8_t fourth_of_a_line[80 * 3]; // set the size of the array to 240
+					for (uint16_t line = 0; line < 480; line++) // traverse the display in the y direction
+					{
+						// BMPs store data lowest line first -- bottom up
+						setPosition(0, (479 - line));
+						// move through the 4 chunks of 80 pixels
+						for (uint8_t line_section = 0; line_section < 4; line_section++)
+						{
+							// get a fourth of the line and store it in the previously defined array
+							bmp_file.read(fourth_of_a_line, 80 * 3);
+
+							// now write this fourth to the TFT
+							SPI_send_pixels(80 * 3, fourth_of_a_line);
+							// do this until the entire amount of pixels has been sent
+						}
+					}
+				}
+			}
+		}
+		// release the BMP file handle
+		bmp_file.close();
+		delay(1000);
+	}
+	// release the root directory file handle
+	root_dir.close();
+}
+
+void SPI_send_pixels(uint16_t byte_count, uint8_t *data_ptr)
+{
+	uint8_t subpixel;
+
+	// select the LCD data register
+	SET_DC;
+	// select the LCD controller
+	CLR_CS;
+
+	// load the first byte
+	subpixel = *data_ptr;
+
+	while (byte_count)
+	{
+		// delay(1);
+		// send the byte out by writing to the SPI data register 
+		SPDR = subpixel;
+		// whilst transmistting;
+		data_ptr++; // point to next byte
+		subpixel = *data_ptr; // load the next byte
+		byte_count--; // count the byte increment
+
+		// now that we have done all we can do, wait for the transfer to finish
+		while (!(SPSR & _BV(SPIF))); // _BV is defined in the pre-processor and expands to (1 << (SPIF))
+	}
+
+	// deselect the LCD controller
+	SET_CS;
+}
+
 void setup()
 {
 #if interface_PARALLEL
@@ -439,11 +540,15 @@ void setup()
 	SET_WR;
 	SET_CS;
 	CLR_DC;
+	//
 #endif
 
 #if interface_SPI
+	Serial.begin(115200);
 	// set up port directions
 	DDRB = 0x3F; // pins 8-13 set as outputs
+	DDRC = 0xFF;
+	SD.begin(14); // setup the SD card on pin 14
 
 	// configure the pins in a reasonable starting state
 	SET_DC;
@@ -460,12 +565,17 @@ void setup()
 }
 
 // set the demo to 1 to try it out
-#define showcolor_demo 1
+#define showcolor_demo 0
 #define colorbars_demo 0
+#define show_BMPs_demo 1
 // more demos will be added soon!
 
 void loop()
 {
+#if BMP_demo
+	show_BMPs_in_root();
+#endif
+
 #if colorbars_demo
 	ColorBars();
 	delay(5000);
@@ -482,4 +592,6 @@ void loop()
 	fill_LCD(0x00, 0xFF, 0xFF);
 	delay(5000);
 #endif
+
+	delay(10000);
 }
