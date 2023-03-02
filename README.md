@@ -45,6 +45,17 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 // 0   | 1   | 1   |  8-bit parallel  |
 // 1   | 1   | 1   |  4-wire SPI      |
 //-----+-----+-----+------------------+
+// SD card connection (using CFA10112)
+//  ARD      | Port  | Adapter pin |  Function                                |
+//-----------+-------+-------------+------------------------------------------+
+// 3.3V      |       |  3.3V       |  POWER 3.3V                              |
+// GND       |       |  GND        |  GROUND                                  |
+//-----------+-------+-------------+------------------------------------------+
+// D11       | PORTB |  DI         |  Serial data in                  (DI)    |
+// D12       | PORTB |  DO         |  Serial data out                 (DO)    |
+// D13       | PORTB |  SCK        |  Serial clock                    (SCK)   |
+// D14       | PORTC |  CS         |  Chip select                     (CS)    |
+//-----------+-------+-------------+------------------------------------------+
 ```
 ## Display information
 Here are links to our active displays:\
