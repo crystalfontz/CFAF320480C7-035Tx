@@ -39,12 +39,34 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 // D11       | PORTB |  34         |  SPI data input                  (SDA)   |
 // D13       | PORTB |  36         |  Serial clock                    (SCK)   |
 //-----------+-------+-------------+------------------------------------------+
+//==============================================================================
 // Interface Selection
 // IM2 | IM1 | IM0 |  Interface mode  |
 //-----+-----+-----+------------------+
 // 0   | 1   | 1   |  8-bit parallel  |
 // 1   | 1   | 1   |  4-wire SPI      |
 //-----+-----+-----+------------------+
+//==============================================================================
+// Resistive touchscreen connection (SPI only)
+//  ARD      | Port  | Touchscreen pin |  Function                            |
+//-----------+-------+-----------------+---------------- ---------------------+
+// D16       | PORTC |  XL             |  Touch panel left            (XL)    |
+// D17       | PORTC |  XR             |  Touch panel right           (XR)    |
+// D18       | PORTC |  YD             |  Touch panel bottom          (YD)    |
+// D19       | PORTC |  YU             |  Touch panel top             (YU)    |
+//-----------+-------+-----------------+---------------- ---------------------+
+// Capacitive touchscreen connection (SPI only)
+//  ARD      | Port  | Touchscreen pin |  Function                            |
+//-----------+-------+-----------------+---------------- ---------------------+
+// 3.3V      |       |  3.3V           |  POWER 3.3V                          |
+// GND       |       |  GND            |  GROUND                              |
+//-----------+-------+-----------------+---------------- ---------------------+
+// D0        | PORTD |  RST            |  Reset                       (Reset) |
+// D17       | PORTC |  INT            |  Interrupt                   (INT)   |
+// D18       | PORTC |  SDA            |  Serial data                 (SDA)   |
+// D19       | PORTC |  SCK            |  Serial clock                (SCL)   |
+//-----------+-------+-----------------+---------------- ---------------------+
+//==============================================================================
 // SD card connection (using CFA10112)
 //  ARD      | Port  | Adapter pin |  Function                                |
 //-----------+-------+-------------+------------------------------------------+
@@ -60,6 +82,7 @@ This is Arduino sample code for the CFAF320480C7-035Tx family of displays. These
 ## Display information
 Here are links to our active displays:\
 [CFAF320480C7-035TR](https://www.crystalfontz.com/product/cfaf320480c7035tr-320x480-resistive-touchscreen-tft-display)\
-[CFAF320480C7-035TN](https://www.crystalfontz.com/product/cfaf320480c7035tn-320x480-3-5-inch-color-tft-display)
+[CFAF320480C7-035TN](https://www.crystalfontz.com/product/cfaf320480c7035tn-320x480-3-5-inch-color-tft-display)\
+[CFAF320480C7-035TC](https://www.crystalfontz.com/product/cfaf320480c7035tc-320x480-capacitive-touchscreen-tft-lcd-display)
 
 For more information about other TFT offerings, please see our full list [here](https://www.crystalfontz.com/c/tft-lcd-displays/25).
