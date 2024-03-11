@@ -86,3 +86,19 @@ Here are links to our active displays:\
 [CFAF320480C7-035TC](https://www.crystalfontz.com/product/cfaf320480c7035tc-320x480-capacitive-touchscreen-tft-lcd-display)
 
 For more information about other TFT offerings, please see our full list [here](https://www.crystalfontz.com/c/tft-lcd-displays/25).
+
+## Migrating from the CFAF320480C5-035T-T/S to the CFAF320480C7-035Tx
+We make our best efforts to ensure that all replacement displays are "drop-in" replacements, however, this may not always be possible/feasible due to the End-Of-Life (EOL) of components and various other factors. The Himax HX8357-B LCD controller has gone EOL and its replacement controller, the ILITEK ILI9488 has some key differences that affect the initialization sequence of the display when migrating between the two parts. The affected commands during the display initialization are outlined below. It is recommended to follow the initialization sequence used in our sample code when migrating.
+```
+// Command | HX8357-B                  | ILI9488                   | Notes                                               |
+//---------+-------------------------+---------------------------+-----------------------------------------------------+
+// D0h     | Set power                 | NV memory write           | The ILI9488 power commands are C0h and C1h          |
+// D1h     | Set VCOM                  | NV memory protection key  | The ILI9488 VCOM command is C5h                     |
+// D2h     | Set power for normal mode | NV memory status read     | The ILI9488 normal mode power command is C2h        |
+// C0h     | Set panel driving         | Power control 1           | The ILI9488 display function control command is B6h |
+// C5h     | Set display frame         | VCOM control              | The ILI9488 frame rate control command is b1h       |
+// E9h     | Set panel related         | Set image function        |                                                     |
+// C8h     | Set gamma                 | CABC control 2            | The ILI9488 gamma commands are E0h and E1h          |
+// 3Ah     | Set pixel format          | Interface pixel format    | 3bits/pixel functionality is removed in the ILI9488 |
+// B4h     | Set display mode          | Display inversion control | The ILI9488 display function control command is B6h |                                                                   
+//-----------+-------+-------------+-------------------------------------------------------------------------------------+
