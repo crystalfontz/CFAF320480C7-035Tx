@@ -384,10 +384,10 @@ uint16_t Ymin = 1023;
 uint16_t Ymax = 0;
 #else
 // copied from the serial console window
-uint16_t Xmin = 131;
-uint16_t Xmax = 874;
-uint16_t Ymin = 99;
-uint16_t Ymax = 913;
+uint16_t Xmin = 138;
+uint16_t Xmax = 888;
+uint16_t Ymin = 59;
+uint16_t Ymax = 948;
 #endif
 
 uint8_t Read_Touch_Screen(uint16_t *x, uint16_t *y)
@@ -445,8 +445,8 @@ uint8_t Read_Touch_Screen(uint16_t *x, uint16_t *y)
 		pinMode(TS_YD, INPUT);
 
 		// calculate the pixel values, store in the user's pointers.
-		*x = ((X - (uint32_t)Xmin) * 240) / ((uint32_t)Xmax - (uint32_t)Xmin);
-		*y = 320 - ((Y - (uint32_t)Ymin) * 320) / ((uint32_t)Ymax - (uint32_t)Ymin);
+		*x = ((X - (uint32_t)Xmin) * 320) / ((uint32_t)Xmax - (uint32_t)Xmin);
+		*y = 480 - ((Y - (uint32_t)Ymin) * 480) / ((uint32_t)Ymax - (uint32_t)Ymin);
 
 		// return touched flag.
 		return (1);
